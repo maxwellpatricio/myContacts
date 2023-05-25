@@ -1,40 +1,19 @@
-const { v4 } = require('uuid');
-
 const db = require('../../database')
-let contacts = [
-  {
-    id: v4(),
-    name: 'Maxwell',
-    email: 'maxwellpatri@gmail.com',
-    phone: '123456',
-    category_id: v4(),
-  },
-  {
-    id: v4(),
-    name: 'Luana',
-    email: 'luana@gmail.com',
-    phone: '12345336',
-    category_id: v4(),
-  },
-];
 
 class ContactRepository {
-  findAll() {
-    return new Promise((resolve) => {
-      resolve(contacts);
-    });
+  async findAll() {
+    const rows = await db.query('SELECT * FROM contacts');
+    return rows;
   }
 
-  findById(id) {
-    return new Promise((resolve) => resolve(
-      contacts.find((contact) => contact.id === id)
-    ));
+  async findById(id) {
+    const [row] = await db.query('SELECT * FROM contacts WHERE id = $1', [id]);
+    return row;
   }
 
-  findByEmail(email) {
-    return new Promise((resolve) => resolve(
-      contacts.find((contact) => contact.email === email)
-    ));
+  async findByEmail(email) {
+    const [row] = await db.query('SELECT * FROM contacts WHERE email = $1', [email]);
+    return row;
   }
 
   async create({ name, email, phone, category_id }) {
@@ -47,29 +26,21 @@ class ContactRepository {
     return row;
   }
 
-  update(id, { name, email, phone, category_id }) {
-    return new Promise((resolve) => {
-      const updatedContact = {
-        id,
-        name,
-        email,
-        phone,
-        category_id,
-      };
+  async update(id, { name, email, phone, category_id }) {
+    const [row] = await db.query(`
+      UPDATE contacts
+      SET name = $1, email = $2, phone = $3, category_id = $4
+      WHERE id = $5
+      RETURNING *
+    `, [name, email, phone, category_id, id]);
 
-      contacts = contacts.map((contact) => (
-        contact.id === id ? updatedContact : contact
-      ));
-
-      resolve(updatedContact);
-    });
+    return row;
   }
 
-  delete(id) {
-    return new Promise((resolve) => {
-      contacts = contacts.filter((contact) => contact.id !== id);
-      resolve();
-    });
+  async delete(id) {
+    const deleteOp = await db.query('DELETE FROM contacts WHERE id = $1', [id]);
+
+    return deleteOp;
   }
 }
 
